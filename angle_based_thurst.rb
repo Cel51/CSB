@@ -4,49 +4,49 @@ STDOUT.sync = true # DO NOT REMOVE
 
 
 # game loop
-boosted = false
-cp = []
-id = []
-temp = 0
+
+has_boost = true
+best_dist = 0
+tbest_dist = 0
+
+checkpoints = []
+first_lap = true
+
 prev = 0
+
+def distance(a, b)
+   return Math.sqrt((a[0] - b[0])**2 + (a[1] - b[1])**2)
+end
+
 loop do
-    # next_checkpoint_x: x position of the next check point
-    # next_checkpoint_y: y position of the next check point
-    # next_checkpoint_dist: distance to the next checkpoint
-    # next_checkpoint_angle: angle between your pod orientation and the direction of the next checkpoint
     x, y, next_checkpoint_x, next_checkpoint_y, next_checkpoint_dist, next_checkpoint_angle = gets.split(" ").collect {|x| x.to_i}
     opponent_x, opponent_y = gets.split(" ").collect {|x| x.to_i}
 
-    if !cp.include? [next_checkpoint_x, next_checkpoint_y]
-       cp.push [next_checkpoint_x, next_checkpoint_y]
-    end
-
-    if cp.length == 4
-        for i in 0..cp.length - 1
-            for j in 0..cp.length - 1
-                x = cp[j][0] - cp[i][0]
-                y = cp[j][1] - cp[i][1]
-
-                if Math.sqrt((x**2 - y**2).abs).to_i > temp
-                    temp = Math.sqrt((x**2 - y**2).abs).to_i
-                    id = cp[j]
+    if !checkpoints.include? [next_checkpoint_x, next_checkpoint_y]
+        checkpoints.push [next_checkpoint_x, next_checkpoint_y]
+    elsif first_lap && checkpoints.length > 1 && checkpoints[0] == [next_checkpoint_x, next_checkpoint_y]
+        first_lap = false
+        for i in 0..checkpoints.length - 1
+            for j in 0..checkpoints.length - 1
+                if distance(checkpoints[i], checkpoints[j]) > tbest_dist
+                    tbest_dist = distance(checkpoints[i], checkpoints[j])
+                    best_dist = checkpoints[j]
                 end
             end
         end
     end
 
-    # Write an action using puts
-    # To debug: STDERR.puts "Debug messages..."
+    STDERR.puts checkpoints.to_s
+    STDERR.puts best_dist.to_s
+    STDERR.puts has_boost
 
-    STDERR.puts [x, y].to_s
-
-    if next_checkpoint_angle > 90 || next_checkpoint_angle < -90
+    if next_checkpoint_angle.abs > 90
         thrust = 0
-    elsif next_checkpoint_angle < 90 && next_checkpoint_angle > 10  && next_checkpoint_angle > -10  && next_checkpoint_angle < -1
+    elsif next_checkpoint_angle.abs < 90 && next_checkpoint_angle.abs > 10
         thrust = (1000/next_checkpoint_angle.abs).ceil
-    elsif !boosted && id[0] == next_checkpoint_x && id[1] == next_checkpoint_y && next_checkpoint_angle < 5 && next_checkpoint_angle > -5
+    elsif has_boost && best_dist == [next_checkpoint_x, next_checkpoint_y] && next_checkpoint_angle.abs < 5
         thrust = 'BOOST'
-        boosted = true
+        has_boost = false
     else
         thrust = 100
     end
@@ -55,10 +55,8 @@ loop do
         prev = thrust
     end
 
-    dis = 0
-    dis = Math.sqrt(((next_checkpoint_x - x)**2 + (next_checkpoint_y - y)**2).abs)
-
-    STDERR.puts opponent_x
+    #dis = 0
+    #dis = Math.sqrt(((next_checkpoint_x - x)**2 + (next_checkpoint_y - y)**2).abs)
 
     # You have to output the target position
     # followed by the power (0 <= thrust <= 100)
